@@ -62,7 +62,7 @@ jobs:
   linux-build:
     name: 🐧 Linux Build
     needs: prepare-source
-    uses: "./.github/workflows/linux-build.yml"
+    uses: "./.github/workflows/linuxloader-build.yml"
 
   windows-build:
     name: 🪟 Windows Build
