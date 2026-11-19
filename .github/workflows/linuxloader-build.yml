@@ -2,6 +2,7 @@
 name: 🐧 Linux Loader Build
 
 on:
+  workflow_dispatch:
   workflow_call:
 
 jobs:
