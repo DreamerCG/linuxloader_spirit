@@ -1,0 +1,69 @@
+
+name: 🐧 Linux Loader Build
+
+on:
+  workflow_call:
+
+jobs:
+  linux-build:
+    name: Build Linux binaries
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download version.h artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: version-file
+          path: src/loader/
+
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('**/install-packages.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+
+      - name: Install Packages
+        run: scripts/appimage/install-packages.sh
+
+      - name: Build Dependencies
+        run: scripts/appimage/build-deps.sh
+
+      - name: Compile Linux binaries
+        shell: bash
+        run: |
+          set -e
+
+          echo "Configuring Linux build..."
+          cmake -S . -B build-linux
+
+          echo "Compiling linuxloader and linuxloader.so..."
+          cmake --build build-linux --target linuxloader_exe linuxloader --parallel 4
+
+          echo "Checking build outputs..."
+
+          test -f build-linux/linuxloader || {
+            echo "ERROR: linuxloader executable not found"
+            exit 1
+          }
+
+          test -f build-linux/linuxloader.so || {
+            echo "ERROR: linuxloader.so not found"
+            exit 1
+          }
+
+          echo "Linux binaries successfully built."
+
+      - name: Upload Linux binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxloader-linux
+          path: |
+            build-linux/linuxloader
+            build-linux/linuxloader.so
+          if-no-files-found: error
